@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_db
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+      - qdrant_snapshots:/qdrant/snapshots
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  pdf-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile.processor
+    container_name: pdf_processor
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./processed:/app/processed
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - COLLECTION_NAME=pdf_documents
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # web-interface:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.web
+  #   container_name: web_interface
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./uploads:/app/uploads
+  #   environment:
+  #     - API_URL=http://pdf-processor:8000
+  #     - QDRANT_HOST=qdrant
+  #     - QDRANT_PORT=6333
+  #   depends_on:
+  #     - pdf-processor
+  #   restart: unless-stopped
+
+volumes:
+  qdrant_storage:
+  qdrant_snapshots: 
