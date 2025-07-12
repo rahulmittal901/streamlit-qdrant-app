@@ -62,25 +62,6 @@ def reset_chat():
     st.session_state.context = None
     gc.collect()
 
-def display_pdf(file):
-    st.markdown("### PDF Preview")
-    base64_pdf = base64.b64encode(file.read()).decode("utf-8")
-    pdf_display = f"""
-        <div style="width:100%; height:600px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
-            <iframe 
-                src="data:application/pdf;base64,{base64_pdf}#toolbar=1&navpanes=1&scrollbar=1&page=1&view=FitH" 
-                width="100%" 
-                height="100%" 
-                type="application/pdf"
-                style="border: none;">
-                <p>Your browser does not support PDFs. 
-                <a href="data:application/pdf;base64,{base64_pdf}" target="_blank">Download the PDF</a>
-                </p>
-            </iframe>
-        </div>
-        """
-    st.markdown(pdf_display, unsafe_allow_html=True)
-
 def ensure_collection_exists(collection_name: str, vector_size: int = 1024):
     """Ensure Qdrant collection exists via API"""
     try:
@@ -169,7 +150,7 @@ def process_pdf_with_llamaindex_and_qdrant_api(file) -> bool:
             )
             
             if response.status_code == 200:
-                st.success(f"✅ Uploaded {len(points)} chunks to Qdrant")
+                #st.success(f"✅ Uploaded {len(points)} chunks to Qdrant")
                 return True
             else:
                 st.error(f"Failed to upload to Qdrant: {response.text}")
@@ -330,32 +311,24 @@ with st.sidebar:
     if not check_qdrant_health():
         st.error("⚠️ Qdrant is not running. Please start the Docker container first:")
         st.code("docker run -d -p 6333:6333 qdrant/qdrant:latest")
-        st.stop()
-    else:
-        st.success("✅ Qdrant is running!")
-
+    # else:
+    #     st.success("✅ Qdrant is running!")
+    
+    # File uploader and upload logic (should come right after Qdrant health status)
     uploaded_file = st.file_uploader("Choose your `.pdf` file", type="pdf")
-
     if uploaded_file:
         try:
-            st.write("Processing your document with LlamaIndex embeddings...")
-            
-            # Process PDF with LlamaIndex and store in Qdrant via API
+            st.write("Processing your document...")
             success = process_pdf_with_llamaindex_and_qdrant_api(uploaded_file)
-            
             if success:
                 st.success(f"✅ Document processed and stored in Qdrant!")
-                
-                # Display PDF preview
-                display_pdf(uploaded_file)
             else:
                 st.error("Failed to process document")
-                
         except Exception as e:
             st.error(f"An error occurred: {e}")
             st.stop()
-
-    # Show stored documents
+    
+    # Always show stored documents section
     collections = get_all_collections()
     if collections:
         st.subheader("📚 Stored Documents")
@@ -481,13 +454,13 @@ if prompt := st.chat_input("What's up?"):
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 # Add database info
-if st.sidebar.checkbox("Show database info"):
-    st.sidebar.subheader("📊 Qdrant Database Info")
-    collections = get_all_collections()
-    st.sidebar.write(f"Total documents: {len(collections)}")
+# if st.sidebar.checkbox("Show database info"):
+#     st.sidebar.subheader("📊 Qdrant Database Info")
+#     collections = get_all_collections()
+#     st.sidebar.write(f"Total documents: {len(collections)}")
     
-    if collections:
-        for collection in collections:
-            st.sidebar.write(f"• {collection}")
-    else:
-        st.sidebar.write("No documents in database") 
+#     if collections:
+#         for collection in collections:
+#             st.sidebar.write(f"• {collection}")
+#     else:
+#         st.sidebar.write("No documents in database") 
