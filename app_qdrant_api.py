@@ -198,10 +198,10 @@ def search_qdrant_api(query: str, limit: int = 10) -> List[Dict[str, Any]]:
         all_results = []
         
         for collection in collections:
-            # Search in each collection
+            # Search in each collection - limit to max 3 results per document
             search_payload = {
                 "vector": query_embedding,
-                "limit": limit,
+                "limit": min(3, limit),  # similarity_top_k = max 3 per document
                 "with_payload": True
             }
             
@@ -240,16 +240,42 @@ def search_qdrant_api(query: str, limit: int = 10) -> List[Dict[str, Any]]:
                     doc_results[filename] = []
                 doc_results[filename].append(result)
             
-            # Take top results from each document
-            balanced_results = []
-            results_per_doc = max(1, limit // len(doc_results))
+            # Calculate how many results to take from each document
+            num_docs = len(doc_results)
+            if num_docs <= 5:
+                # For small number of docs, take more from each
+                results_per_doc = max(1, limit // num_docs)
+            else:
+                # For many docs, ensure we get at least 1 from each, but prioritize top-scoring
+                results_per_doc = 1
+                remaining_slots = limit - num_docs
+                # Distribute remaining slots to top-scoring documents
+                sorted_docs = sorted(doc_results.items(), 
+                                   key=lambda x: max(r['score'] for r in x[1]), 
+                                   reverse=True)
+                
+                balanced_results = []
+                for i, (filename, results) in enumerate(sorted_docs):
+                    if i < remaining_slots:
+                        # Take 2 results from top documents
+                        balanced_results.extend(results[:2])
+                    else:
+                        # Take 1 result from remaining documents
+                        balanced_results.extend(results[:1])
+                
+                # Sort by score and return
+                balanced_results.sort(key=lambda x: x["score"], reverse=True)
+                st.info(f"⚖️ Balanced results from {num_docs} documents: {len(balanced_results)} total")
+                return balanced_results[:limit]
             
+            # Original logic for small number of documents
+            balanced_results = []
             for filename, results in doc_results.items():
                 balanced_results.extend(results[:results_per_doc])
             
             # Sort by score again and return
             balanced_results.sort(key=lambda x: x["score"], reverse=True)
-            st.info(f"⚖️ Balanced results from {len(doc_results)} documents: {len(balanced_results)} total")
+            st.info(f"⚖️ Balanced results from {num_docs} documents: {len(balanced_results)} total")
             return balanced_results[:limit]
         
         return all_results[:limit]
@@ -382,8 +408,20 @@ if prompt := st.chat_input("What's up?"):
         full_response = ""
         
         try:
+            # Get number of documents to calculate appropriate limit
+            collections = get_all_collections()
+            num_docs = len(collections)
+            
+            # Smart dynamic limit: scales with number of documents but stays reasonable
+            # For 100 docs: limit = min(100, 5 * 20) = 100, but capped at 30
+            # For 10 docs: limit = min(10, 5 * 2) = 10
+            # For 5 docs: limit = min(5, 5 * 1) = 5
+            dynamic_limit = min(num_docs * 5, 30)  # Cap at 30 to avoid too many results
+            
+            st.info(f"📊 Searching with limit {dynamic_limit} for {num_docs} documents")
+            
             # Search Qdrant via API
-            search_results = search_qdrant_api(prompt, limit=5)
+            search_results = search_qdrant_api(prompt, limit=dynamic_limit)
             
             if not search_results:
                 full_response = "No documents have been uploaded yet or no relevant information found."
