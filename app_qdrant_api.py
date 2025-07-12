@@ -189,6 +189,12 @@ def search_qdrant_api(query: str, limit: int = 10) -> List[Dict[str, Any]]:
         # Get all collections
         collections = get_all_collections()
         
+        if not collections:
+            st.warning("No collections found in Qdrant")
+            return []
+        
+        st.info(f"🔍 Searching across {len(collections)} collections: {', '.join(collections)}")
+        
         all_results = []
         
         for collection in collections:
@@ -206,6 +212,8 @@ def search_qdrant_api(query: str, limit: int = 10) -> List[Dict[str, Any]]:
             
             if response.status_code == 200:
                 results = response.json()["result"]
+                st.info(f"📄 Found {len(results)} results in collection: {collection}")
+                
                 for result in results:
                     all_results.append({
                         "score": result["score"],
@@ -215,9 +223,35 @@ def search_qdrant_api(query: str, limit: int = 10) -> List[Dict[str, Any]]:
                         "text": result["payload"]["text"],
                         "total_chunks": result["payload"]["total_chunks"]
                     })
+            else:
+                st.error(f"Failed to search collection {collection}: {response.text}")
         
-        # Sort by score and return top results
+        # Sort by score
         all_results.sort(key=lambda x: x["score"], reverse=True)
+        st.info(f"🎯 Total results found: {len(all_results)}")
+        
+        # Ensure we get results from multiple documents
+        if len(all_results) > limit:
+            # Group results by document
+            doc_results = {}
+            for result in all_results:
+                filename = result['filename']
+                if filename not in doc_results:
+                    doc_results[filename] = []
+                doc_results[filename].append(result)
+            
+            # Take top results from each document
+            balanced_results = []
+            results_per_doc = max(1, limit // len(doc_results))
+            
+            for filename, results in doc_results.items():
+                balanced_results.extend(results[:results_per_doc])
+            
+            # Sort by score again and return
+            balanced_results.sort(key=lambda x: x["score"], reverse=True)
+            st.info(f"⚖️ Balanced results from {len(doc_results)} documents: {len(balanced_results)} total")
+            return balanced_results[:limit]
+        
         return all_results[:limit]
         
     except Exception as e:
@@ -354,6 +388,15 @@ if prompt := st.chat_input("What's up?"):
             if not search_results:
                 full_response = "No documents have been uploaded yet or no relevant information found."
             else:
+                # Debug: Show what documents were found
+                st.info(f"🔍 Found {len(search_results)} relevant chunks from search")
+                
+                # Group results by document
+                docs_found = set()
+                for result in search_results:
+                    docs_found.add(result['filename'])
+                st.info(f"📚 Documents found: {', '.join(docs_found)}")
+                
                 # Load LLM
                 llm = load_llm()
                 
