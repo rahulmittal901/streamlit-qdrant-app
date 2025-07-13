@@ -174,7 +174,7 @@ def search_qdrant_api(query: str, limit: int = 10) -> List[Dict[str, Any]]:
             st.warning("No collections found in Qdrant")
             return []
         
-        st.info(f"🔍 Searching across {len(collections)} collections: {', '.join(collections)}")
+        #st.info(f"🔍 Searching across {len(collections)} collections: {', '.join(collections)}")
         
         all_results = []
         
