@@ -41,13 +41,17 @@ This project provides a Streamlit UI for document chat powered by LlamaIndex emb
 - All dependencies are in `requirements.txt`.
 
 ## Environment Variables
-- `QDRANT_HOST` and `QDRANT_PORT` are set in Docker Compose for service discovery.
+- `QDRANT_HOST` and `QDRANT_PORT` are now read from environment variables in the app code. These are set automatically by Docker Compose for container-to-container communication.
+- When running locally, the app defaults to `localhost:6333` for Qdrant.
 - You will need a Groq API key to use the chat features (enter in the Streamlit sidebar).
 
 ## Troubleshooting
 - **Docker not found:** Make sure Docker Desktop is running.
 - **Port conflicts:** Ensure ports 8501 and 6333 are free.
 - **Qdrant not running:** Check Docker logs for errors.
+- **Streamlit cannot connect to Qdrant:**
+  - If running in Docker Compose, ensure you have the latest code where Qdrant host/port are read from environment variables (see `app_qdrant_api.py`).
+  - The app will use the correct service name (`qdrant`) for container networking.
 
 ## License
 MIT 
