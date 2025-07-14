@@ -24,8 +24,8 @@ from llama_index.core import Document
 import streamlit as st
 
 # Qdrant API settings
-QDRANT_HOST = "localhost"
-QDRANT_PORT = 6333
+QDRANT_HOST = os.environ.get("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.environ.get("QDRANT_PORT", 6333))
 QDRANT_API_URL = f"http://{QDRANT_HOST}:{QDRANT_PORT}"
 COLLECTION_NAME = "pdf_documents"
 
