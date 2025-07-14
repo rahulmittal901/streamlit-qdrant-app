@@ -2,10 +2,13 @@
     "name": "Qdrant + Streamlit Dev",
     "image": "mcr.microsoft.com/devcontainers/python:3.11",
     "features": {
-      "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+      "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+      "ghcr.io/devcontainers/features/docker-compose:2": {}
     },
     "forwardPorts": [6333, 8501],
-    "postCreateCommand": "./.devcontainer/post_create.sh",
+    "dockerComposeFile": ["../docker-compose.yml"],
+    "service": "streamlit",
+    "workspaceFolder": "/workspaces/streamlit-qdrant-app",
     "customizations": {
       "vscode": {
         "settings": {},
@@ -15,4 +18,4 @@
         ]
       }
     }
-  }
+}

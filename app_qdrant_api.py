@@ -193,7 +193,7 @@ def search_qdrant_api(query: str, limit: int = 10) -> List[Dict[str, Any]]:
             
             if response.status_code == 200:
                 results = response.json()["result"]
-                st.info(f"📄 Found {len(results)} results in collection: {collection}")
+                #st.info(f"📄 Found {len(results)} results in collection: {collection}")
                 
                 for result in results:
                     all_results.append({
@@ -209,7 +209,7 @@ def search_qdrant_api(query: str, limit: int = 10) -> List[Dict[str, Any]]:
         
         # Sort by score
         all_results.sort(key=lambda x: x["score"], reverse=True)
-        st.info(f"🎯 Total results found: {len(all_results)}")
+        #st.info(f"🎯 Total results found: {len(all_results)}")
         
         # Ensure we get results from multiple documents
         if len(all_results) > limit:
@@ -246,7 +246,7 @@ def search_qdrant_api(query: str, limit: int = 10) -> List[Dict[str, Any]]:
                 
                 # Sort by score and return
                 balanced_results.sort(key=lambda x: x["score"], reverse=True)
-                st.info(f"⚖️ Balanced results from {num_docs} documents: {len(balanced_results)} total")
+                #st.info(f"⚖️ Balanced results from {num_docs} documents: {len(balanced_results)} total")
                 return balanced_results[:limit]
             
             # Original logic for small number of documents
@@ -256,7 +256,7 @@ def search_qdrant_api(query: str, limit: int = 10) -> List[Dict[str, Any]]:
             
             # Sort by score again and return
             balanced_results.sort(key=lambda x: x["score"], reverse=True)
-            st.info(f"⚖️ Balanced results from {num_docs} documents: {len(balanced_results)} total")
+            #st.info(f"⚖️ Balanced results from {num_docs} documents: {len(balanced_results)} total")
             return balanced_results[:limit]
         
         return all_results[:limit]
@@ -391,7 +391,7 @@ if prompt := st.chat_input("What's up?"):
             # For 5 docs: limit = min(5, 5 * 1) = 5
             dynamic_limit = min(num_docs * 5, 30)  # Cap at 30 to avoid too many results
             
-            st.info(f"📊 Searching with limit {dynamic_limit} for {num_docs} documents")
+            #st.info(f"📊 Searching with limit {dynamic_limit} for {num_docs} documents")
             
             # Search Qdrant via API
             search_results = search_qdrant_api(prompt, limit=dynamic_limit)
@@ -400,13 +400,13 @@ if prompt := st.chat_input("What's up?"):
                 full_response = "No documents have been uploaded yet or no relevant information found."
             else:
                 # Debug: Show what documents were found
-                st.info(f"🔍 Found {len(search_results)} relevant chunks from search")
+                #st.info(f"🔍 Found {len(search_results)} relevant chunks from search")
                 
                 # Group results by document
                 docs_found = set()
                 for result in search_results:
                     docs_found.add(result['filename'])
-                st.info(f"📚 Documents found: {', '.join(docs_found)}")
+                #st.info(f"📚 Documents found: {', '.join(docs_found)}")
                 
                 # Load LLM
                 llm = load_llm()
@@ -440,10 +440,10 @@ if prompt := st.chat_input("What's up?"):
                 full_response = response.text
                 
                 # Show sources if available
-                if search_results:
-                    full_response += "\n\n**Sources:**\n"
-                    for i, result in enumerate(search_results[:3], 1):
-                        full_response += f"{i}. {result['filename']} (Chunk {result['chunk_index'] + 1})\n"
+                # if search_results:
+                #     full_response += "\n\n**Sources:**\n"
+                #     for i, result in enumerate(search_results[:3], 1):
+                #         full_response += f"{i}. {result['filename']} (Chunk {result['chunk_index'] + 1})\n"
             
         except Exception as e:
             full_response = f"Sorry, I encountered an error: {str(e)}"
